@@ -13,6 +13,7 @@ try {
 
 const express = require('express');
 const cors = require('cors');
+const os = require('os');
 const { supabase, importExcel } = require('./database');
 const PDFDocument = require('pdfkit');
 const multer = require('multer');
