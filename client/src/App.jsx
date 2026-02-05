@@ -235,7 +235,7 @@ function App() {
     if (!confirm(`Voulez-vous vraiment ${actionLabel} ${teacher.nom} ?`)) return;
 
     try {
-      const resp = await fetch(`http://localhost:3001/api/teachers/${teacher.id}/archive`, {
+      const resp = await fetch(`${API_URL}/api/teachers/${teacher.id}/archive`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -248,7 +248,7 @@ function App() {
         fetchStats();
       }
     } catch (err) { console.error('Archive error:', err); alert('Erreur lors de l\'archivage'); }
-  }, [session, fetchTeachers, fetchStats]);
+  }, [session, fetchTeachers, fetchStats, API_URL]);
 
   const handleImportMassive = async (e) => {
     e.preventDefault();
@@ -258,7 +258,7 @@ function App() {
     formData.append('file', importFile);
 
     try {
-      const resp = await fetch('http://localhost:3001/api/admin/import-massive', {
+      const resp = await fetch(`${API_URL}/api/admin/import-massive`, {
         method: 'POST',
         headers: { 'x-admin-email': session.user.email },
         body: formData
@@ -661,7 +661,7 @@ function App() {
                 <form onSubmit={async (e) => {
                   e.preventDefault();
                   try {
-                    const resp = await fetch('http://localhost:3001/api/admin/create-user', {
+                    const resp = await fetch(`${API_URL}/api/admin/create-user`, {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },
                       body: JSON.stringify({ email: adminEmail, password: adminPass })
