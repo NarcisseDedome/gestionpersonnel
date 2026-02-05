@@ -48,6 +48,117 @@ app.get('/api/debug-env', (req, res) => {
     });
 });
 
+// Get all teachers with optional search and category filter
+app.get('/api/teachers', async (req, res) => {
+    try {
+        const { search = '', category = 'All' } = req.query;
+
+        let query = supabase.from('teachers').select('*');
+
+        // Filter by category (grade)
+        if (category !== 'All') {
+            query = query.ilike('grade', `${category}%`);
+        }
+
+        // Filter by search (nom, prenoms, matricule, etablissement)
+        if (search) {
+            query = query.or(`nom.ilike.%${search}%,prenoms.ilike.%${search}%,matricule.ilike.%${search}%,etablissement.ilike.%${search}%`);
+        }
+
+        // Order by nom
+        query = query.order('nom', { ascending: true });
+
+        const { data, error } = await query;
+
+        if (error) {
+            console.error('Supabase error:', error);
+            return res.status(500).json({ error: error.message });
+        }
+
+        res.json(data || []);
+    } catch (err) {
+        console.error('Error fetching teachers:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Get statistics for dashboard
+app.get('/api/stats', async (req, res) => {
+    try {
+        const { data: teachers, error } = await supabase
+            .from('teachers')
+            .select('*');
+
+        if (error) {
+            console.error('Supabase error:', error);
+            return res.status(500).json({ error: error.message });
+        }
+
+        const total = teachers.length;
+
+        // Category breakdown
+        const categories = { A: 0, B: 0, C: 0, D: 0 };
+        teachers.forEach(t => {
+            const cat = (t.grade || 'C').charAt(0).toUpperCase();
+            if (categories[cat] !== undefined) categories[cat]++;
+        });
+
+        // Gender breakdown
+        const gender = { M: 0, F: 0 };
+        teachers.forEach(t => {
+            const g = (t.sexe || 'M').toUpperCase();
+            if (gender[g] !== undefined) gender[g]++;
+        });
+
+        // Upcoming retirements (this year)
+        const currentYear = new Date().getFullYear();
+        const upcomingRetirements = teachers.filter(t => {
+            if (!t.date_retraite) return false;
+            const retYear = new Date(t.date_retraite).getFullYear();
+            return retYear === currentYear;
+        }).length;
+
+        // Alerts
+        const alerts = [];
+        const today = new Date();
+        const sixMonthsFromNow = new Date(today.getTime() + 180 * 24 * 60 * 60 * 1000);
+
+        teachers.forEach(t => {
+            // Imminent retirement (within 6 months)
+            if (t.date_retraite) {
+                const retDate = new Date(t.date_retraite);
+                if (retDate >= today && retDate <= sixMonthsFromNow) {
+                    alerts.push({
+                        type: 'retraite_imminente',
+                        message: `${t.nom} ${t.prenoms} - Retraite le ${retDate.toLocaleDateString()}`,
+                        targetId: t.matricule
+                    });
+                }
+            }
+
+            // Incomplete file (missing critical data)
+            if (!t.date_naissance || !t.matricule || !t.etablissement) {
+                alerts.push({
+                    type: 'dossier_incomplet',
+                    message: `${t.nom} ${t.prenoms} - Dossier incomplet`,
+                    targetId: t.matricule
+                });
+            }
+        });
+
+        res.json({
+            total,
+            categories,
+            gender,
+            upcomingRetirements,
+            alerts
+        });
+    } catch (err) {
+        console.error('Error fetching stats:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // ... (lines 16-186 omitted)
 
 const LOGO_PATH = path.join(__dirname, 'assets', 'logo.png');

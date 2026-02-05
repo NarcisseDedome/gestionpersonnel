@@ -69,11 +69,11 @@ const TeacherRow = memo(({ t, handleEdit, handleArchive }) => (
           <Archive size={14} />
         </button>
         <div style={{ width: '1px', background: '#e2e8f0', margin: '0 2px' }}></div>
-        <button className="btn btn-success" style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem' }} title="Attestation de Validité" onClick={() => window.open(`${API_URL}/api/teachers/${t.id}/certificate-validity`)}>
+        <button className="btn btn-success" style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem', minWidth: '85px', whiteSpace: 'nowrap' }} title="Attestation de Validité" onClick={() => window.open(`${API_URL}/api/teachers/${t.id}/certificate-validity`)}>
           <CheckCircle size={14} />
           Validité
         </button>
-        <button className="btn btn-warning" style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem' }} title="Présence au Poste" onClick={() => window.open(`${API_URL}/api/teachers/${t.id}/presence-post`)}>
+        <button className="btn btn-warning" style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem', minWidth: '95px', whiteSpace: 'nowrap' }} title="Présence au Poste" onClick={() => window.open(`${API_URL}/api/teachers/${t.id}/presence-post`)}>
           <Clock size={14} />
           Présence
         </button>
