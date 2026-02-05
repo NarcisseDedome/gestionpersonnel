@@ -5,10 +5,12 @@ const cors = require('cors');
 const { supabase, importExcel } = require('./database');
 const PDFDocument = require('pdfkit');
 const multer = require('multer');
-const upload = multer({ dest: '/tmp/' }); // Vercel writable directory
+const upload = multer({ dest: '/tmp' }); // Vercel writable directory (no trailing slash)
 
 const app = express();
 const port = process.env.PORT || 3001;
+
+console.log('Server initializing...');
 
 app.use(cors());
 app.use(express.json());
