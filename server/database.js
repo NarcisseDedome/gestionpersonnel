@@ -9,11 +9,13 @@ const supabaseKey = process.env.SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseKey) {
     console.error('CRITICAL ERROR: Supabase Environment Variables are missing.');
-    console.error('Please configure SUPABASE_URL and SUPABASE_ANON_KEY in your Vercel Project Settings.');
-    throw new Error('Missing Supabase Environment Variables');
+    // On ne lance PAS d'erreur ici pour permettre au serveur de démarrer 
+    // et d'afficher la page de debug /api/debug-env
 }
 
-const supabase = createClient(supabaseUrl, supabaseKey);
+const supabase = (supabaseUrl && supabaseKey)
+    ? createClient(supabaseUrl, supabaseKey)
+    : { from: () => ({ select: () => ({ data: [], error: 'Configuration manquante' }) }) }; // Mock safe
 
 /**
  * Note: Dans Supabase, la table doit être créée via le tableau de bord ou un script SQL.
