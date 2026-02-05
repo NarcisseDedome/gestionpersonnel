@@ -269,9 +269,13 @@ function App() {
         fetchTeachers();
         fetchStats();
       } else {
-        alert('Échec de l\'importation');
+        const errorData = await resp.json();
+        alert(`Échec de l'importation: ${errorData.error || 'Erreur inconnue'}`);
       }
-    } catch (err) { alert('Erreur de connexion'); }
+    } catch (err) {
+      console.error('Import error:', err);
+      alert('Erreur de connexion');
+    }
   };
 
   const calculateDaysLeft = (dateStr) => {
