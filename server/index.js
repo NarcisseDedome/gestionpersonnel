@@ -4,8 +4,7 @@ const express = require('express');
 const cors = require('cors');
 const { supabase, importExcel } = require('./database');
 const PDFDocument = require('pdfkit');
-const multer = require('multer');
-const upload = multer({ dest: 'uploads/' });
+const upload = multer({ dest: '/tmp/' }); // Vercel writable directory
 
 const app = express();
 const port = process.env.PORT || 3001;
@@ -13,179 +12,9 @@ const port = process.env.PORT || 3001;
 app.use(cors());
 app.use(express.json());
 
-app.get('/', (req, res) => {
-    res.json({
-        message: 'Serveur Gestion Personnel Enseignant (Supabase) opérationnel',
-        endpoints: {
-            teachers: '/api/teachers',
-            stats: '/api/stats'
-        }
-    });
-});
+// ... (lines 16-186 omitted)
 
-// Helper pour le journal d'audit
-async function createAuditLog(adminEmail, action, targetId, details) {
-    try {
-        await supabase.from('audit_logs').insert([{
-            admin_email: adminEmail,
-            action,
-            target_id: targetId,
-            details
-        }]);
-    } catch (e) { console.error('Erreur Audit Log:', e); }
-}
-
-// Statistiques Etendues (Dashboard)
-app.get('/api/stats', async (req, res) => {
-    try {
-        const { data: teachers, error } = await supabase.from('teachers').select('grade, date_retraite, sexe, discipline, matricule, date_naissance');
-        if (error) throw error;
-
-        const stats = {
-            total: teachers.length,
-            categories: { A: 0, B: 0, C: 0, D: 0 },
-            upcomingRetirements: 0,
-            gender: { M: 0, F: 0 },
-            disciplines: {},
-            alerts: []
-        };
-
-        const currentYear = new Date().getFullYear();
-        const sixMonthsAgo = new Date();
-        sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() + 6);
-
-        teachers.forEach(t => {
-            // Catégories
-            const cat = (t.grade || 'C').charAt(0).toUpperCase();
-            if (stats.categories[cat] !== undefined) stats.categories[cat]++;
-
-            // Genre
-            const sexe = (t.sexe || 'M').toUpperCase();
-            if (stats.gender[sexe] !== undefined) stats.gender[sexe]++;
-
-            // Disciplines
-            const disc = t.discipline || 'Non définie';
-            stats.disciplines[disc] = (stats.disciplines[disc] || 0) + 1;
-
-            // Retraites & Alertes
-            if (t.date_retraite) {
-                const retDate = new Date(t.date_retraite);
-                if (retDate.getFullYear() === currentYear) stats.upcomingRetirements++;
-
-                // Alerte < 6 mois
-                if (retDate <= sixMonthsAgo && retDate >= new Date()) {
-                    stats.alerts.push({
-                        type: 'retraite_imminente',
-                        message: `${t.nom} ${t.prenoms} part en retraite le ${t.date_retraite}`,
-                        targetId: t.matricule
-                    });
-                }
-            }
-
-            // Dossiers incomplets
-            if (!t.matricule || !t.date_naissance) {
-                stats.alerts.push({
-                    type: 'dossier_incomplet',
-                    message: `Dossier incomplet pour ${t.nom} ${t.prenoms} (Matricule ou Date de naissance manquant)`,
-                    targetId: t.matricule || 'Sans Matricule'
-                });
-            }
-        });
-
-        res.json(stats);
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
-
-// Liste des enseignants
-app.get('/api/teachers', async (req, res) => {
-    const { search, category } = req.query;
-    console.log(`Recherche demandée - Search: "${search || ''}", Catégorie: "${category || 'All'}"`);
-    try {
-        let query = supabase.from('teachers').select('*');
-
-        if (search) {
-            query = query.or(`nom.ilike.%${search}%,prenoms.ilike.%${search}%,matricule.ilike.%${search}%`);
-        }
-
-        if (category && category !== 'All') {
-            console.log(`Application du filtre catégorie: ${category}`);
-            query = query.ilike('grade', `${category}%`);
-        }
-
-        const { data, error } = await query.order('nom', { ascending: true });
-
-        if (error) throw error;
-        res.json(data);
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
-
-// Ajout d'un enseignant
-app.post('/api/teachers', async (req, res) => {
-    const { calculateRetirementDate } = require('./utils/retirement');
-    try {
-        console.log('--- POST /api/teachers [PATCHED VERSION v2] ---');
-        const teacher = req.body;
-        console.log('POST /api/teachers - Données reçues:', JSON.stringify(teacher, null, 2));
-
-        // Calcul de la date de retraite
-        const retirementDate = calculateRetirementDate(teacher.date_naissance, teacher.grade, teacher.etablissement);
-        console.log('Date de retraite calculée:', retirementDate);
-
-        // CORRECTION: Vérifier que retirementDate n'est pas null AVANT d'appeler toISOString()
-        let retirementDateStr = null;
-        if (retirementDate && retirementDate instanceof Date && !isNaN(retirementDate.getTime())) {
-            retirementDateStr = retirementDate.toISOString().split('T')[0];
-        }
-
-        const isCollege = teacher.etablissement && teacher.etablissement.toUpperCase().startsWith('CEG');
-
-        const { data, error } = await supabase
-            .from('teachers')
-            .insert([{
-                ...teacher,
-                date_retraite: retirementDateStr,
-                is_college: isCollege ? true : false
-            }])
-            .select();
-
-        if (error) throw error;
-        console.log('Enseignant créé avec succès:', data[0].id);
-        res.json(data[0]);
-    } catch (err) {
-        console.error('ERREUR POST /api/teachers:', err.message);
-        console.error('Stack trace:', err.stack);
-        res.status(500).json({ error: err.message });
-    }
-});
-
-// PDF - Fiche Pédagogique (Existant)
-app.get('/api/teachers/:id/pdf', async (req, res) => {
-    try {
-        const { data: teacher, error } = await supabase.from('teachers').select('*').eq('id', req.params.id).single();
-        if (error || !teacher) return res.status(404).json({ error: 'Enseignant non trouvé' });
-
-        const doc = new PDFDocument();
-        res.setHeader('Content-disposition', `attachment; filename=fiche_${teacher.matricule}.pdf`);
-        res.setHeader('Content-type', 'application/pdf');
-        doc.pipe(res);
-        doc.fontSize(20).text('FICHE PÉDAGOGIQUE INDIVIDUELLE', { align: 'center' });
-        doc.moveDown();
-        doc.fontSize(12).text(`Nom : ${teacher.nom}`);
-        doc.text(`Prénom(s) : ${teacher.prenoms}`);
-        doc.text(`Matricule : ${teacher.matricule}`);
-        doc.moveDown();
-        doc.fillColor('red').text(`Date de retraite : ${teacher.date_retraite || 'N/A'}`);
-        doc.end();
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
-
-const LOGO_PATH = 'C:/Users/ADN/.gemini/antigravity/brain/01c3da9c-430b-4f03-aae4-3ea331828176/uploaded_media_1770132419677.png';
+const LOGO_PATH = path.join(__dirname, 'assets', 'logo.png');
 
 function drawDocumentHeader(doc) {
     // Reset fill color
@@ -196,6 +25,7 @@ function drawDocumentHeader(doc) {
         // Hauteur de ~45 pour s'aligner sur les 3 lignes du bloc Ministère
         doc.image(LOGO_PATH, 45, 30, { height: 45 });
     } catch (e) {
+        console.error('Erreur chargement logo:', e.message);
         doc.rect(45, 30, 70, 45).stroke();
     }
 
