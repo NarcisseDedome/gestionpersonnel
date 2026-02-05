@@ -6,6 +6,13 @@ const { calculateRetirementDate } = require('./utils/retirement');
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_ANON_KEY;
+
+if (!supabaseUrl || !supabaseKey) {
+    console.error('CRITICAL ERROR: Supabase Environment Variables are missing.');
+    console.error('Please configure SUPABASE_URL and SUPABASE_ANON_KEY in your Vercel Project Settings.');
+    throw new Error('Missing Supabase Environment Variables');
+}
+
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 /**
