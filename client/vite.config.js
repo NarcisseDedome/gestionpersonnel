@@ -11,8 +11,7 @@ export default defineConfig({
         manualChunks: {
           vendor: ['react', 'react-dom'],
           charts: ['recharts'],
-          icons: ['lucide-react'],
-          utils: ['xlsx', 'jspdf', 'date-fns'] // Si utilisés
+          icons: ['lucide-react']
         }
       }
     }
