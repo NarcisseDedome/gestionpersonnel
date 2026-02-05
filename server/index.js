@@ -4,6 +4,7 @@ const express = require('express');
 const cors = require('cors');
 const { supabase, importExcel } = require('./database');
 const PDFDocument = require('pdfkit');
+const multer = require('multer');
 const upload = multer({ dest: '/tmp/' }); // Vercel writable directory
 
 const app = express();
