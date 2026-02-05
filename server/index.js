@@ -315,9 +315,6 @@ app.post('/api/admin/import-massive', upload.single('file'), async (req, res) =>
 
         await importExcel(tempPath);
 
-        // Log Audit
-        await createAuditLog(req.headers['x-admin-email'] || 'admin@collines.bj', 'IMPORT', 'Massive', `Importation réussie via fichier: ${req.file.originalname}`);
-
         // Supprimer le fichier temporaire
         try { require('fs').unlinkSync(tempPath); } catch (e) { }
 
