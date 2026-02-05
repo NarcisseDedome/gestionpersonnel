@@ -530,6 +530,11 @@ app.get('/api/admin/audit-logs', async (req, res) => {
     }
 });
 
-app.listen(port, () => {
-    console.log(`Serveur Supabase prêt sur http://localhost:${port}`);
-});
+// Modification pour Vercel (Export de l'app)
+if (require.main === module) {
+    app.listen(port, () => {
+        console.log(`Serveur Supabase prêt sur http://localhost:${port}`);
+    });
+}
+
+module.exports = app;

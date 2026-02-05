@@ -14,6 +14,7 @@ import {
 } from 'recharts';
 
 const LOGO_PERSONNEL = '/logo.jpg';
+const API_URL = import.meta.env.MODE === 'production' ? '' : 'http://localhost:3001';
 
 const calculateDaysLeft = (date) => {
   if (!date) return 'N/A';
@@ -68,11 +69,11 @@ const TeacherRow = memo(({ t, handleEdit, handleArchive }) => (
           <Archive size={14} />
         </button>
         <div style={{ width: '1px', background: '#e2e8f0', margin: '0 2px' }}></div>
-        <button className="btn btn-success" style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem' }} title="Attestation de Validité" onClick={() => window.open(`http://localhost:3001/api/teachers/${t.id}/certificate-validity`)}>
+        <button className="btn btn-success" style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem' }} title="Attestation de Validité" onClick={() => window.open(`${API_URL}/api/teachers/${t.id}/certificate-validity`)}>
           <CheckCircle size={14} />
           Validité
         </button>
-        <button className="btn btn-warning" style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem' }} title="Présence au Poste" onClick={() => window.open(`http://localhost:3001/api/teachers/${t.id}/presence-post`)}>
+        <button className="btn btn-warning" style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem' }} title="Présence au Poste" onClick={() => window.open(`${API_URL}/api/teachers/${t.id}/presence-post`)}>
           <Clock size={14} />
           Présence
         </button>
@@ -133,8 +134,7 @@ function App() {
   const fetchStats = async () => {
     setStatsLoading(true);
     try {
-      const hostname = window.location.hostname || 'localhost';
-      const resp = await fetch(`http://${hostname}:3001/api/stats`);
+      const resp = await fetch(`${API_URL}/api/stats`);
       if (!resp.ok) throw new Error(`Erreur serveur: ${resp.status}`);
       const data = await resp.json();
       console.log('Stats reçues:', data);
@@ -151,7 +151,7 @@ function App() {
   const fetchTeachers = useCallback(async () => {
     setLoading(true);
     try {
-      const resp = await fetch(`http://localhost:3001/api/teachers?search=${search}&category=${category}`);
+      const resp = await fetch(`${API_URL}/api/teachers?search=${search}&category=${category}`);
       const data = await resp.json();
       setTeachers(data);
     } catch (err) {
@@ -186,8 +186,8 @@ function App() {
       }
 
       const url = isEditing
-        ? `http://localhost:3001/api/teachers/${editId}`
-        : 'http://localhost:3001/api/teachers';
+        ? `${API_URL}/api/teachers/${editId}`
+        : `${API_URL}/api/teachers`;
       const method = isEditing ? 'PUT' : 'POST';
 
       const resp = await fetch(url, {
