@@ -1,16 +1,29 @@
 ﻿const path = require('path');
-require('dotenv').config({ path: path.join(__dirname, '.env') });
+const fs = require('fs');
+
+// Safe dotenv loading
+try {
+    const envPath = path.join(__dirname, '.env');
+    if (fs.existsSync(envPath)) {
+        require('dotenv').config({ path: envPath });
+    }
+} catch (e) {
+    console.log('No .env file found (normal in production)');
+}
+
 const express = require('express');
 const cors = require('cors');
 const { supabase, importExcel } = require('./database');
 const PDFDocument = require('pdfkit');
 const multer = require('multer');
-const upload = multer({ dest: '/tmp' }); // Vercel writable directory (no trailing slash)
+
+// SWITCH TO MEMORY STORAGE (Avoids /tmp issues entirely)
+const upload = multer({ storage: multer.memoryStorage() });
 
 const app = express();
 const port = process.env.PORT || 3001;
 
-console.log('Server initializing...');
+console.log('Server initializing... Dependencies loaded.');
 
 app.use(cors());
 app.use(express.json());
@@ -287,18 +300,26 @@ app.get('/api/admin/import-local', async (req, res) => {
 });
 
 // Importation Excel via Upload (Nouveau)
+// Importation Excel via Upload (Nouveau) - Updated for Memory Storage
 app.post('/api/admin/import-massive', upload.single('file'), async (req, res) => {
     try {
         if (!req.file) return res.status(400).json({ error: 'Aucun fichier fourni' });
 
-        await importExcel(req.file.path);
+        // Avec memoryStorage, le fichier est dans req.file.buffer
+        // On doit le passer à importExcel qui attend un chemin OU adapter importExcel
+        // Pour faire simple, on écrit le buffer dans /tmp juste pour le traitement (si nécessaire)
+        // OU on modifie importExcel pour accepter un buffer.
+        // Option 3 (Rapide): Ecrire dans /tmp manuellement
+        const tempPath = path.join('/tmp', `upload_${Date.now()}.xlsx`);
+        require('fs').writeFileSync(tempPath, req.file.buffer);
+
+        await importExcel(tempPath);
 
         // Log Audit
         await createAuditLog(req.headers['x-admin-email'] || 'admin@collines.bj', 'IMPORT', 'Massive', `Importation réussie via fichier: ${req.file.originalname}`);
 
         // Supprimer le fichier temporaire
-        const fs = require('fs');
-        fs.unlinkSync(req.file.path);
+        try { require('fs').unlinkSync(tempPath); } catch (e) { }
 
         res.json({ message: 'Importation massive réussie' });
     } catch (err) {
