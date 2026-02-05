@@ -12,6 +12,25 @@ const port = process.env.PORT || 3001;
 app.use(cors());
 app.use(express.json());
 
+app.get('/', (req, res) => {
+    res.json({
+        message: 'Serveur Gestion Personnel Enseignant (Vercel) opérationnel',
+        endpoints: {
+            teachers: '/api/teachers',
+            stats: '/api/stats',
+            debug: '/api/debug-env'
+        }
+    });
+});
+
+app.get('/api/debug-env', (req, res) => {
+    res.json({
+        SUPABASE_URL_SET: !!process.env.SUPABASE_URL,
+        SUPABASE_KEY_SET: !!process.env.SUPABASE_ANON_KEY,
+        NODE_ENV: process.env.NODE_ENV
+    });
+});
+
 // ... (lines 16-186 omitted)
 
 const LOGO_PATH = path.join(__dirname, 'assets', 'logo.png');
