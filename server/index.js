@@ -310,7 +310,7 @@ app.post('/api/admin/import-massive', upload.single('file'), async (req, res) =>
         // Pour faire simple, on écrit le buffer dans /tmp juste pour le traitement (si nécessaire)
         // OU on modifie importExcel pour accepter un buffer.
         // Option 3 (Rapide): Ecrire dans /tmp manuellement
-        const tempPath = path.join('/tmp', `upload_${Date.now()}.xlsx`);
+        const tempPath = path.join(os.tmpdir(), `upload_${Date.now()}.xlsx`);
         require('fs').writeFileSync(tempPath, req.file.buffer);
 
         await importExcel(tempPath);

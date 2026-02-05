@@ -1,5 +1,10 @@
 const path = require('path');
-require('dotenv').config({ path: path.join(__dirname, '.env') });
+try {
+    const envPath = path.join(__dirname, '.env');
+    if (require('fs').existsSync(envPath)) {
+        require('dotenv').config({ path: envPath });
+    }
+} catch (e) { } // Silent fail in production
 const { createClient } = require('@supabase/supabase-js');
 const XLSX = require('xlsx');
 const { calculateRetirementDate } = require('./utils/retirement');
