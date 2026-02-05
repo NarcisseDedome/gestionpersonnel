@@ -387,4 +387,10 @@ if (require.main === module) {
     });
 }
 
+// Global Error Handler (pour éviter les crashs silencieux sur Vercel)
+app.use((err, req, res, next) => {
+    console.error('SERVER ERROR:', err);
+    res.status(500).json({ error: 'Internal Server Error', details: err.message, stack: err.stack });
+});
+
 module.exports = app;
