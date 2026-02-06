@@ -1,4 +1,4 @@
-﻿const path = require('path');
+const path = require('path');
 const fs = require('fs');
 
 // Safe dotenv loading
@@ -15,7 +15,6 @@ const express = require('express');
 const cors = require('cors');
 const os = require('os');
 const { supabase, importExcel } = require('./database');
-const PDFDocument = require('pdfkit');
 const multer = require('multer');
 
 // SWITCH TO MEMORY STORAGE (Avoids /tmp issues entirely)
@@ -244,9 +243,9 @@ const getFormattedDate = () => {
 // PDF - Certificat de Validité de Service (Format Officiel)
 app.get('/api/teachers/:id/certificate-validity', async (req, res) => {
     try {
-        const { data: teacher, error } = await supabase.from('teachers').select('*').eq('id', req.params.id).single();
         if (error || !teacher) return res.status(404).json({ error: 'Non trouvé' });
 
+        const PDFDocument = require('pdfkit'); // Lazy load
         const doc = new PDFDocument({ margin: 50, size: 'A4' });
         res.setHeader('Content-disposition', `attachment; filename=certificat_validite_${teacher.matricule}.pdf`);
         res.setHeader('Content-type', 'application/pdf');
@@ -310,9 +309,9 @@ app.get('/api/teachers/:id/certificate-validity', async (req, res) => {
 // PDF - Présence au Poste (Format Officiel)
 app.get('/api/teachers/:id/presence-post', async (req, res) => {
     try {
-        const { data: teacher, error } = await supabase.from('teachers').select('*').eq('id', req.params.id).single();
         if (error || !teacher) return res.status(404).json({ error: 'Non trouvé' });
 
+        const PDFDocument = require('pdfkit'); // Lazy load
         const doc = new PDFDocument({ margin: 50, size: 'A4' });
         res.setHeader('Content-disposition', `attachment; filename=presence_poste_${teacher.matricule}.pdf`);
         res.setHeader('Content-type', 'application/pdf');
