@@ -243,6 +243,7 @@ const getFormattedDate = () => {
 // PDF - Certificat de Validité de Service (Format Officiel)
 app.get('/api/teachers/:id/certificate-validity', async (req, res) => {
     try {
+        const { data: teacher, error } = await supabase.from('teachers').select('*').eq('id', req.params.id).single();
         if (error || !teacher) return res.status(404).json({ error: 'Non trouvé' });
 
         const PDFDocument = require('pdfkit'); // Lazy load
@@ -309,6 +310,7 @@ app.get('/api/teachers/:id/certificate-validity', async (req, res) => {
 // PDF - Présence au Poste (Format Officiel)
 app.get('/api/teachers/:id/presence-post', async (req, res) => {
     try {
+        const { data: teacher, error } = await supabase.from('teachers').select('*').eq('id', req.params.id).single();
         if (error || !teacher) return res.status(404).json({ error: 'Non trouvé' });
 
         const PDFDocument = require('pdfkit'); // Lazy load
