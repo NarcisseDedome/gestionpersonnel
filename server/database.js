@@ -20,7 +20,23 @@ if (!supabaseUrl || !supabaseKey) {
 
 const supabase = (supabaseUrl && supabaseKey)
     ? createClient(supabaseUrl, supabaseKey)
-    : { from: () => ({ select: () => ({ data: [], error: 'Configuration manquante' }) }) }; // Mock safe
+    : {
+        from: () => ({
+            select: () => Promise.resolve({ data: [], error: { message: 'Supabase non configuré (Variables manquantes)' } }),
+            insert: () => Promise.resolve({ data: null, error: { message: 'Supabase non configuré (Variables manquantes)' } }),
+            update: () => Promise.resolve({ data: null, error: { message: 'Supabase non configuré (Variables manquantes)' } }),
+            delete: () => Promise.resolve({ data: null, error: { message: 'Supabase non configuré (Variables manquantes)' } }),
+            eq: function () { return this; },
+            single: () => Promise.resolve({ data: null, error: { message: 'Supabase non configuré (Variables manquantes)' } }),
+            order: function () { return this; },
+            limit: function () { return this; },
+            ilike: function () { return this; },
+            or: function () { return this; }
+        }),
+        auth: {
+            signUp: () => Promise.resolve({ data: null, error: { message: 'Supabase non configuré (Variables manquantes)' } })
+        }
+    };
 
 /**
  * Note: Dans Supabase, la table doit être créée via le tableau de bord ou un script SQL.
