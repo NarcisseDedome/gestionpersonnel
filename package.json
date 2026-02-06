@@ -18,5 +18,8 @@
     "multer": "^2.0.2",
     "pdfkit": "^0.17.2",
     "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "vercel": "^50.12.3"
   }
 }
